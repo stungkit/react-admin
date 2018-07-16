@@ -145,6 +145,81 @@ export const PostEdit = (props) => (
 
 Using a custom `EditActions` component also allow to remove the `<DeleteButton>` if you want to prevent deletions from the admin.
 
+## Prefilling a `<Create>` Record
+
+By default, the `<Create>` view starts with an empty `record`. You can pass a custom `record` object to start with preset values:
+
+```jsx
+const commentDefaultValue = { nb_views: 0 };
+export const CommentCreate = (props) => (
+    <Create {...props} record={commentDefaultValue}>
+        <SimpleForm>
+            <TextInput source="author" />
+            <RichTextInput source="body" />
+            <NumberInput source="nb_views" />
+        </SimpleForm>
+    </Create>
+);
+```
+
+While using the `record` to set default values works here, it doesn't work with `<Edit>`. So it's recommended to use [the `defaultValue` prop in the Form component](#default-values) instead.
+
+However, there is a valid use case for presetting the `record` prop: to prepopulate a record based on a related record. For instance, in a `PostShow` component, you may want to display a button to create a comment related to the current post, that would lead to a `CommentCreate` page where the `post_id` is preset.
+
+To enable this, you must first update the `CommentCreate` component to read the record from the `location` object (which is injected by react-router):
+
+```diff
+const commentDefaultValue = { nb_views: 0 };
+-export const CommentCreate = (props) => (
++export const CommentCreate = ({ location, ...props}) => (
+-   <Create {...props}>
++   <Create
++       record={(location.state && location.state.record) || defaultValue}
++       location={location}
++       {...props}
++   >
+       <SimpleForm>
+            <TextInput source="author" />
+            <RichTextInput source="body" />
+            <NumberInput source="nb_views" />
+        </SimpleForm>
+    </Create>
+);
+```
+
+To set this `location.state`, you have to create a link or a button using react-router's `<Link>` component:
+
+{% raw %}
+```jsx
+// in PostShow.js
+import Button from '@material-ui/core/Button';
+import { Link } from 'react-router-dom';
+
+const CreateRelatedCommentButton = ({ record }) => (
+    <Button
+        component={Link}
+        to={{
+            pathname: '/comments/create',
+            state: { record: { post_id: record.id } },
+        }}
+    >
+        Write a comment for that post
+    </Button>
+);
+
+export default PostShow = props => (
+    <Show {...props}>
+        <SimpleShowLayout>
+            ...
+            <CreateRelatedCommentButton />
+        </SimpleShowLayout>
+    </Show>
+)
+```
+{% endraw %}
+
+**Tip**: To style the button with the main color from the material-ui theme, use the `Link` component from the `react-admin` package rather than the one from `react-router`.
+
 ## The `<SimpleForm>` component
 
 The `<SimpleForm>` component receives the `record` as prop from its parent component. It is responsible for rendering the actual form. It is also responsible for validating the form data. Finally, it receives a `handleSubmit` function as prop, to be called with the updated record as argument when the user submits the form.
@@ -163,6 +238,9 @@ Here are all the props accepted by the `<SimpleForm>` component:
 * [`submitOnEnter`](#submit-on-enter)
 * [`redirect`](#redirection-after-submission)
 * [`toolbar`](#toolbar)
+* `save`: The function invoked when the form is submitted. This is passed automatically by `react-admin` when the form component is used inside `Create` and `Edit` components.
+* `saving`: A boolean indicating whether a save operation is ongoing. This is passed automatically by `react-admin` when the form component is used inside `Create` and `Edit` components.
+* `form`: The name of the [`redux-form`](https://redux-form.com/7.4.2/docs/api/reduxform.md/#-code-form-string-code-required-). It defaults to `record-form` and should only be modified when using the `SimpleForm` outside of a `Create` or `Edit` component.
 
 ```jsx
 export const PostCreate = (props) => (
@@ -192,6 +270,9 @@ Here are all the props accepted by the `<TabbedForm>` component:
 * [`submitOnEnter`](#submit-on-enter)
 * [`redirect`](#redirection-after-submission)
 * [`toolbar`](#toolbar)
+* `save`: The function invoked when the form is submitted. This is passed automatically by `react-admin` when the form component is used inside `Create` and `Edit` components.
+* `saving`: A boolean indicating whether a save operation is ongoing. This is passed automatically by `react-admin` when the form component is used inside `Create` and `Edit` components.
+* `form`: The name of the [`redux-form`](https://redux-form.com/7.4.2/docs/api/reduxform.md/#-code-form-string-code-required-). It defaults to `record-form` and should only be modified when using the `TabbedForm` outside of a `Create` or `Edit` component.
 
 {% raw %}
 ```jsx
@@ -470,6 +551,21 @@ export const PostEdit = (props) => (
 );
 ```
 
+You can also pass a custom route (e.g. "/home") or a function as `redirect` prop value. For example, if you want to redirect to a page related to the current object:
+
+```jsx
+// redirect to the related Author show page
+const redirect = (basePath, id, data) => `/author/${data.author_id}/show`;
+  
+export const PostEdit = (props) => {
+    <Edit {...props}>
+        <SimpleForm redirect={redirect}>
+            ...
+        </SimpleForm>
+    </Edit>
+);
+```
+
 This affects both the submit button, and the form submission when the user presses `ENTER` in one of the form fields.
 
 ## Toolbar
@@ -512,6 +608,15 @@ export const PostEdit = (props) => (
     </Edit>
 );
 ```
+
+Here are the props received by the `Toolbar` component when passed as the `toolbar` prop of the `SimpleForm` or `TabbedForm` components:
+
+* `handleSubmitWithRedirect`: The function to call in order to submit the form. It accepts a single parameter overriding the form's default redirect.
+* `invalid`: A boolean indicating whether the form is invalid
+* `pristine`: A boolean indicating whether the form is pristine (eg: no inputs have been changed yet)
+* `redirect`: The default form's redirect
+* `saving`: A boolean indicating whether a save operation is ongoing.
+* `submitOnEnter`: A boolean indicating whether the form should be submitted when pressing `enter`
 
 **Tip**: Use react-admin's `<Toolbar>` component instead of material-ui's `<Toolbar>` component. The former builds up on the latter, and adds support for an alternative mobile layout (and is therefore responsive).
 
