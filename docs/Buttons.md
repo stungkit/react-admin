@@ -20,6 +20,7 @@ React-Admin provides button components for all the common uses.
     - [`<BulkUpdateButton>`](#bulkupdatebutton)
     - [`<BulkUpdateFormButton>`](#bulkupdateformbutton)
     - [`<FilterButton>`](#filterbutton)
+    - [`<SelectAllButton>`](#selectallbutton)
 
 - **Record Buttons**: To be used in detail views
     - [`<UpdateButton>`](#updatebutton)
@@ -598,6 +599,14 @@ const PostList = () => (
 
 It also supports [all the other `<Button>` props](#button).
 
+### `scrollToTop`
+
+By default, `<CloneButton>` scrolls the page to the top after redirecting to the create view. You can disable it as follows:
+
+```jsx
+const CloneButtonWithoutScrollToTop = () => <CloneButton scrollToTop={false} />
+```
+
 ### Access Control
 
 If you want to control whether this button should be displayed based on users permissions, use the `<CloneButton>` exported by the `@react-admin/ra-rbac` Enterprise package.
@@ -688,6 +697,14 @@ It also supports [all the other `<Button>` props](#button).
 **Tip**: If you want to link to the Create view manually, use the `/{resource}/create` location.
 
 **Tip:** To allow users to create a record without leaving the current view, use the [`<CreateInDialogButton>`](./CreateInDialogButton.md) component.
+
+### `scrollToTop`
+
+By default, `<CreateButton>` scrolls the page to the top after redirecting. You can disable it as follows:
+
+```jsx
+const CreateButtonWithoutScrollToTop = () => <CreateButton scrollToTop={false} />
+```
 
 ### `sx`: CSS API
 
@@ -962,6 +979,14 @@ It also supports [all the other `<Button>` props](#button).
 
 **Tip:** To allow users to edit a record without leaving the current view, use the [`<EditInDialogButton>`](./EditInDialogButton.md) component.
 
+### `scrollToTop`
+
+By default, `<EditButton>` scrolls the page to the top after redirecting. You can disable it as follows:
+
+```jsx
+const EditButtonWithoutScrollToTop = () => <EditButton scrollToTop={false} />
+```
+
 ### Access Control
 
 If your `authProvider` implements [Access Control](./Permissions.md#access-control), `<EditButton>` will only render if the user has the "edit" access to the related resource.
@@ -1116,13 +1141,22 @@ export const PostShow = () => (
 
 ### Props
 
-| Prop       | Required | Type            | Default          | Description                                  |
-| ---------- | -------- | --------------- | ---------------- | -------------------------------------------- |
-| `resource` | Optional | `string`        | -                | target resource, e.g. 'posts'                |
-| `label`    | Optional | `string`        | 'ra.action.list' | label or translation message to use          |
-| `icon`     | Optional | `ReactElement`  | -                | iconElement, e.g. `<CommentIcon />`          |
+| Prop          | Required | Type            | Default          | Description                                    |
+| ------------- | -------- | --------------- | ---------------- | ---------------------------------------------- |
+| `resource`    | Optional | `string`        | -                | target resource, e.g. 'posts'                  |
+| `label`       | Optional | `string`        | 'ra.action.list' | label or translation message to use            |
+| `icon`        | Optional | `ReactElement`  | -                | iconElement, e.g. `<CommentIcon />`            |
+| `scrollToTop` | Optional | `boolean`       | `true`           | Scroll to top after link                       |
 
 It also supports [all the other `<Button>` props](#button).
+
+### `scrollToTop`
+
+By default, `<ListButton>` scrolls the page to the top after redirecting. You can disable it as follows:
+
+```jsx
+const ListButtonWithoutScrollToTop = () => <ListButton scrollToTop={false} />
+```
 
 ### Access Control
 
@@ -1135,6 +1169,79 @@ If your `authProvider` implements [Access Control](./Permissions.md#access-contr
 ```
 
 ## `<RefreshButton>`
+
+## `<SelectAllButton>`
+
+The `<SelectAllButton>` component allows users to select all items from a resource, no matter the pagination.
+
+![SelectAllButton](./img/SelectAllButton.png)
+
+### Usage
+
+By default, react-admin's `<Datagrid>` displays a `<SelectAllButton>` in its `bulkActionsToolbar`. You can customize it by specifying your own `<BulkActionsToolbar selectAllButton>`:
+
+{% raw %}
+
+```jsx
+import { List, Datagrid, BulkActionsToolbar, SelectAllButton, BulkDeleteButton } from 'react-admin';
+
+const PostSelectAllButton = () => (
+    <SelectAllButton 
+        label="Select all records"
+        queryOptions={{ meta: { foo: 'bar' } }}
+    />
+);
+
+export const PostList = () => (
+    <List>
+        <Datagrid
+            bulkActionsToolbar={
+                <BulkActionsToolbar selectAllButton={PostSelectAllButton}>
+                    <BulkDeleteButton />
+                </BulkActionsToolbar>
+            }
+        >
+            ...
+        </Datagrid>
+    </List>
+);
+```
+
+{% endraw %}
+
+### `label`
+
+By default, the `<SelectAllButton>` label is "Select all" (or the `ra.action.select_all_button` message translation). You can also pass a custom `label`:
+
+```jsx
+const PostSelectAllButton = () => <SelectAllButton label="Select all posts" />;
+```
+
+**Tip**: The label will go through [the `useTranslate` hook](./useTranslate.md), so you can use translation keys.
+
+### `limit`
+
+By default, `<SelectAllButton>` selects the 250 first items of your list. To customize this limit, you can use the `limit` prop:
+
+```jsx
+const PostSelectAllButton = () => <SelectAllButton limit={100} />;
+```
+
+### `queryOptions`
+
+`<SelectAllButton>` calls a `get` method of your `dataProvider` via a react-query's `useQuery` hook. You can customize the options you pass to this hook, e.g. to pass [a custom `meta`](./Actions.md#meta-parameter) to the call.
+
+{% raw %}
+
+```jsx
+const PostSelectAllButton = () => <SelectAllButton queryOptions={{ meta: { foo: 'bar' } }} />;
+```
+
+{% endraw %}
+
+### `sx`: CSS API
+
+To override the style of all instances of `<SelectAllButton>` components using the [application-wide style overrides](./AppTheme.md#theming-individual-components), use the `RaSelectAllButton` key.
 
 ## `<SkipNavigationButton>`
 
@@ -1190,6 +1297,14 @@ It also supports [all the other `<Button>` props](#button).
 **Tip**: You can use it as `<Datagrid>` child with no props too. However, you should use the `<Datagrid rowClick="show">` prop instead to avoid using one column for the Edit button.
 
 **Tip**: If you want to link to the Show view manually, use the `/{resource}/{record.id}/show` location.
+
+### `scrollToTop`
+
+By default, `<ShowButton>` scrolls the page to the top after redirecting. You can disable it as follows:
+
+```jsx
+const ShowButtonWithoutScrollToTop = () => <ShowButton scrollToTop={false} />
+```
 
 ### Access Control
 

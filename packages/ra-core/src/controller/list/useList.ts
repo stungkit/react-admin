@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import get from 'lodash/get';
 import isEqual from 'lodash/isEqual';
+
 import { removeEmpty } from '../../util';
 import { FilterPayload, RaRecord, SortPayload } from '../../types';
 import { useResourceContext } from '../../core';
@@ -51,9 +52,9 @@ const refetch = () => {
  * @param {SortPayload} props.sort: Optional. The initial sort (field and order)
  * @param {filterCallback} prop.filterCallback Optional. A function that allows you to make a custom filter
  */
-export const useList = <RecordType extends RaRecord = any>(
-    props: UseListOptions<RecordType>
-): UseListValue<RecordType> => {
+export const useList = <RecordType extends RaRecord = any, ErrorType = Error>(
+    props: UseListOptions<RecordType, ErrorType>
+): UseListValue<RecordType, ErrorType> => {
     const {
         data,
         error,
@@ -162,6 +163,7 @@ export const useList = <RecordType extends RaRecord = any>(
         },
         [setDisplayedFilters, setFilterValues, setPage]
     );
+
     // handle filter prop change
     useEffect(() => {
         if (!isEqual(filter, filterRef.current)) {
@@ -266,6 +268,11 @@ export const useList = <RecordType extends RaRecord = any>(
         }
     }, [isPending, pendingState, setPendingState]);
 
+    const onSelectAll = useCallback(() => {
+        const allIds = data?.map(({ id }) => id) || [];
+        selectionModifiers.select(allIds);
+    }, [data, selectionModifiers]);
+
     return {
         sort,
         data: pendingState ? undefined : finalItems?.data ?? [],
@@ -283,6 +290,7 @@ export const useList = <RecordType extends RaRecord = any>(
         isLoading: loadingState,
         isPending: pendingState,
         onSelect: selectionModifiers.select,
+        onSelectAll,
         onToggleItem: selectionModifiers.toggle,
         onUnselectItems: selectionModifiers.clearSelection,
         page,
@@ -296,12 +304,15 @@ export const useList = <RecordType extends RaRecord = any>(
         setSort,
         showFilter,
         total: finalItems?.total,
-    } as UseListValue<RecordType>;
+    } as UseListValue<RecordType, ErrorType>;
 };
 
-export interface UseListOptions<RecordType extends RaRecord = any> {
+export interface UseListOptions<
+    RecordType extends RaRecord = any,
+    ErrorType = Error,
+> {
     data?: RecordType[];
-    error?: any;
+    error?: ErrorType | null;
     filter?: FilterPayload;
     isFetching?: boolean;
     isLoading?: boolean;
@@ -313,7 +324,9 @@ export interface UseListOptions<RecordType extends RaRecord = any> {
     filterCallback?: (record: RecordType) => boolean;
 }
 
-export type UseListValue<RecordType extends RaRecord = any> =
-    ListControllerResult<RecordType>;
+export type UseListValue<
+    RecordType extends RaRecord = any,
+    ErrorType = Error,
+> = ListControllerResult<RecordType, ErrorType>;
 
 const defaultFilter = {};
